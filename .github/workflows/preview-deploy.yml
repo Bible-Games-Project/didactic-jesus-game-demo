@@ -49,8 +49,11 @@ jobs:
           PROJECT: bgp-${{ github.event.repository.name }}
           OUT_DIR: ${{ steps.outdir.outputs.dir }}
         run: |
-          bunx wrangler@4 pages project create "$PROJECT" --production-branch=main \
-            || echo "Pages project $PROJECT already exists - deploying to it"
+          if ! curl -sf -o /dev/null -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/$PROJECT"; then
+            echo "Creating the Cloudflare Pages project $PROJECT"
+            bunx wrangler@4 pages project create "$PROJECT" --production-branch=main
+          fi
           bunx wrangler@4 pages deploy "$OUT_DIR" --project-name="$PROJECT" --branch=main
 
       - name: No build output yet
